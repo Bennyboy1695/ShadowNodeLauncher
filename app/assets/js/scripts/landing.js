@@ -173,6 +173,10 @@ document.getElementById('launch_button').addEventListener('click', function(e){
 document.getElementById('settingsMediaButton').onclick = (e) => {
     prepareSettings()
     switchView(getCurrentView(), VIEWS.settings)
+    if(hasRPC){
+        DiscordWrapper.updateDetails('In the Settings...')
+        DiscordWrapper.clearState()
+    }
 }
 document.getElementById('refreshMediaButton').onclick = (e) => {
     DistroManager.pullRemote().then((data) => {
@@ -320,6 +324,17 @@ const refreshServerStatus = async function(fade = false){
         document.getElementById('player_count').innerHTML = pVal
     }
     
+}
+
+function loadDiscord(){
+    if(!ConfigManager.getDiscordIntegration()) return
+    const distro = DistroManager.getDistribution()
+    if(!hasRPC){
+        if(distro.discord != null){
+            DiscordWrapper.initRPC(distro.discord, null, '...')
+            hasRPC = true
+        }
+    }
 }
 
 refreshMojangStatuses()
@@ -539,7 +554,6 @@ function asyncSystemScan(mcVersion, launchAfter = true){
 let proc
 // Is DiscordRPC enabled
 let hasRPC = false
-// Joined server regex
 // Change this if your server uses something different.
 const GAME_JOINED_REGEX = /\[.+\]: Sound engine started/
 const GAME_LAUNCH_REGEX = /^\[.+\]: (?:MinecraftForge .+ Initialized|ModLauncher .+ starting: .+)$/
@@ -719,14 +733,14 @@ function dlAsync(login = true){
                 loggerLaunchSuite.log(`Sending selected account (${authUser.displayName}) to ProcessBuilder.`)
                 let pb = new ProcessBuilder(serv, versionData, forgeData, authUser, remote.app.getVersion())
                 setLaunchDetails('Launching game..')
-
-                // const SERVER_JOINED_REGEX = /\[.+\]: \[CHAT\] [a-zA-Z0-9_]{1,16} joined the game/
+                addMetric('packplays', ConfigManager.getSelectedServer().split('-')[0])
                 const SERVER_JOINED_REGEX = new RegExp(`\\[.+\\]: \\[CHAT\\] ${authUser.displayName} has joined!`)
 
                 const onLoadComplete = () => {
                     toggleLaunchArea(false)
                     if(hasRPC){
-                        DiscordWrapper.updateDetails('Loading game..')
+                        DiscordWrapper.updateDetails('Launching game...')
+                        DiscordWrapper.resetTime()
                     }
                     proc.stdout.on('data', gameStateChange)
                     proc.stdout.removeListener('data', tempListener)
@@ -755,8 +769,7 @@ function dlAsync(login = true){
                     if(SERVER_JOINED_REGEX.test(data)){
                         addMetric('serversuccessfullogins', ConfigManager.getSelectedServer().split('-')[0])
                         DiscordWrapper.updateDetails('Exploring the Realm!')
-                    } else if(GAME_JOINED_REGEX.test(data)){
-                        DiscordWrapper.updateDetails('Sailing to Westeros!')
+                        DiscordWrapper.resetTime()
                     }
                 }
 
@@ -777,21 +790,14 @@ function dlAsync(login = true){
                     proc.stderr.on('data', gameErrorListener)
 
                     setLaunchDetails('Done. Enjoy the server!')
-                    addMetric('packplays', ConfigManager.getSelectedServer().split('-')[0])
-
-                    // Init Discord Hook
-                    const distro = DistroManager.getDistribution()
-                    if(distro.discord != null && serv.discord != null){
-                        DiscordWrapper.initRPC(distro.discord, serv.discord)
-                        hasRPC = true
-                        proc.on('close', (code, signal) => {
-                            loggerLaunchSuite.log('Shutting down Discord Rich Presence..')
-                            DiscordWrapper.shutdownRPC()
-                            hasRPC = false
-                            proc = null
-                        })
-                    }
-
+                    proc.on('close', (code, signal) => {
+                        if(hasRPC){
+                            const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
+                            DiscordWrapper.updateDetails('Ready to Play!')
+                            DiscordWrapper.updateState('Server: ' + serv.getName())
+                            DiscordWrapper.resetTime()
+                        }
+                    })
                 } catch(err) {
                     loggerLaunchSuite.error('Error during launch', err)
                     showLaunchFailure('Error During Launch', 'Please check the console (CTRL + Shift + i) for more details.')
@@ -943,6 +949,15 @@ document.getElementById('newsButton').onclick = () => {
     if(newsActive){
         $('#landingContainer *').removeAttr('tabindex')
         $('#newsContainer *').attr('tabindex', '-1')
+        if(hasRPC){
+            if(ConfigManager.getSelectedServer()){
+                const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
+                DiscordWrapper.updateDetails('Ready to Play!')
+                DiscordWrapper.updateState('Server: ' + serv.getName())
+            } else {
+                DiscordWrapper.updateDetails('Landing Screen...')
+            }
+        }
     } else {
         $('#landingContainer *').attr('tabindex', '-1')
         $('#newsContainer, #newsContainer *, #lower, #lower #center *').removeAttr('tabindex')
@@ -951,6 +966,10 @@ document.getElementById('newsButton').onclick = () => {
             newsAlertShown = false
             ConfigManager.setNewsCacheDismissed(true)
             ConfigManager.save()
+        }
+        if(hasRPC){
+            DiscordWrapper.updateDetails('Reading the News...')
+            DiscordWrapper.clearState()
         }
     }
     slide_(!newsActive)
@@ -1234,25 +1253,25 @@ function loadNews(){
                     let title  = el.find('title').text()
                     let author = el.find('dc\\:creator').text()
 
-                        // Generate article.
-                        articles.push(
-                            {
-                                link,
-                                title,
-                                date,
-                                author,
-                                content,
-                                // comments,
-                                // commentsLink: link + '#comments'
-                            }
-                        )
-                    }
-                    resolve({
-                        articles
-                    })
-                },
-                timeout: 2500
-            }
+                    // Generate article.
+                    articles.push(
+                        {
+                            link,
+                            title,
+                            date,
+                            author,
+                            content,
+                            // comments,
+                            // commentsLink: link + '#comments'
+                        }
+                    )
+                }
+                resolve({
+                    articles
+                })
+            },
+            timeout: 2500
+        }
         ).catch(err => {
             resolve({
                 articles: null
