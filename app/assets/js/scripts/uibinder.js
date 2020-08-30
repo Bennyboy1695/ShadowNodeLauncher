@@ -68,7 +68,6 @@ function showMainUI(data){
     loadDiscord()
     setTimeout(() => {
         document.getElementById('frameBar').style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
-        randomiseBackground()
         $('#main').show()
 
         const isLoggedIn = Object.keys(ConfigManager.getAuthAccounts()).length > 0
@@ -133,7 +132,7 @@ function showFatalStartupError(){
                 'Discord Invite Link'
             )
             setOverlayHandler(() => {
-                shell.openExternal('https://github.com/ModRealms-Network/HeliosLauncher/releases')
+                shell.openExternal('https://github.com/Bennyboy1695/ShadowNodeLauncher/releases')
             })
             setDismissHandler(() => {
                 shell.openExternal('https://discord.gg/tKKeTdc')

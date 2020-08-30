@@ -1,0 +1,61 @@
+@-webkit-keyframes spin {
+    from {
+        -webkit-transform: translate(-50%, -50%) rotateZ(0deg);
+        -ms-transform: translate(-50%, -50%) rotateZ(0deg);
+        transform: translate(-50%, -50%) rotateZ(0deg)
+    }
+    to {
+        -webkit-transform: translate(-50%, -50%) rotateZ(360deg);
+        -ms-transform: translate(-50%, -50%) rotateZ(360deg);
+        transform: translate(-50%, -50%) rotateZ(360deg)
+    }
+}
+
+@keyframes spin {
+    from {
+        -webkit-transform: translate(-50%, -50%) rotateZ(0deg);
+        -ms-transform: translate(-50%, -50%) rotateZ(0deg);
+        transform: translate(-50%, -50%) rotateZ(0deg)
+    }
+    to {
+        -webkit-transform: translate(-50%, -50%) rotateZ(360deg);
+        -ms-transform: translate(-50%, -50%) rotateZ(360deg);
+        transform: translate(-50%, -50%) rotateZ(360deg)
+    }
+}
+
+.swirl.small {
+    z-index: -1;
+    width: 100%;
+    -webkit-animation: spin 40s linear infinite;
+    animation: spin 40s linear infinite
+}
+
+.swirl.big {
+    z-index: -1;
+    width: 120%;
+    -webkit-animation: spin 90s linear infinite;
+    animation: spin 90s linear infinite
+}
+
+@media (orientation: portrait) {
+    .swirl.small {
+        height: 100%;
+        width: auto
+    }
+
+    .swirl.big {
+        height: 120%;
+        width: auto
+    }
+}
+
+.swirl {
+    z-index: -1;
+    left: 50%;
+    top: 50%;
+    -webkit-transform: translate(-50%, -50%);
+    -ms-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+    position: fixed
+}

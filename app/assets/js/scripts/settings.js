@@ -1280,7 +1280,7 @@ const settingsAboutChangelogButton = settingsTabAbout.getElementsByClassName('se
 // Bind the devtools toggle button.
 document.getElementById('settingsAboutDevToolsButton').onclick = (e) => {
     let window = remote.getCurrentWindow()
-    window.toggleDevTools()
+    window.toggleDevTools();
 }
 
 /**
@@ -1329,7 +1329,7 @@ function populateAboutVersionInformation(){
  */
 function populateReleaseNotes(){
     $.ajax({
-        url: 'https://github.com/ModRealms-Network/HeliosLauncher/releases.atom',
+        url: 'https://github.com/Bennyboy1695/ShadowNodeLauncher/releases.atom',
         success: (data) => {
             const version = 'v' + remote.app.getVersion()
             const entries = $(data).find('entry')

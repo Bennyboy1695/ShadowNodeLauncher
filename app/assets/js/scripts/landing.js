@@ -39,11 +39,11 @@ const loggerMetrics = LoggerUtil('%c[ModRealms Metrics]', 'color: #7289da; font-
  */
 function toggleLaunchArea(loading){
     if(loading){
-        launch_details.style.display = 'flex'
+        launch_details.style.display = 'inline-block'
         launch_content.style.display = 'none'
     } else {
         launch_details.style.display = 'none'
-        launch_content.style.display = 'inline-flex'
+        launch_content.style.display = 'inline-block'
     }
 }
 
@@ -102,7 +102,7 @@ function runMongoDBTask(task){
 }
 
 function addMetric(type, pack = null){
-    let update
+/*    let update
     let query
     query = {
         type: type
@@ -134,7 +134,7 @@ function addMetric(type, pack = null){
             else loggerMetrics.log('Updated metrics for type: ' + type)
             client.close()
         })
-    })
+    })*/
 }
 
 // Bind launch button
@@ -178,12 +178,12 @@ document.getElementById('settingsMediaButton').onclick = (e) => {
         DiscordWrapper.clearState()
     }
 }
-document.getElementById('refreshMediaButton').onclick = (e) => {
+/*document.getElementById('refreshMediaButton').onclick = (e) => {
     DistroManager.pullRemote().then((data) => {
         onDistroRefresh(data)
         showMainUI(data)
     })
-}
+}*/
 
 // Bind avatar overlay button.
 document.getElementById('avatarOverlay').onclick = (e) => {
@@ -201,7 +201,7 @@ function updateSelectedAccount(authUser){
             username = authUser.displayName
         }
         if(authUser.uuid != null){
-            document.getElementById('avatarContainer').style.backgroundImage = `url('https://crafatar.com/renders/body/${authUser.uuid}')`
+            document.getElementById('avatarContainer').style.backgroundImage = `url('https://crafatar.com/avatars/${authUser.uuid}?overlay')`
         }
     }
     user_text.innerHTML = username
@@ -222,7 +222,7 @@ function updateSelectedServer(serv){
     }
     ConfigManager.setSelectedServer(serv != null ? serv.getID() : null)
     ConfigManager.save()
-    server_selection_button.innerHTML = '\u2022 ' + (serv != null ? serv.getName() : 'No Server Selected')
+    server_selection_button.innerHTML = (serv != null ? serv.getName() : 'No Server Selected')
     if(getCurrentView() === VIEWS.settings){
         animateModsTabRefresh()
     }
@@ -298,14 +298,12 @@ const refreshServerStatus = async function(fade = false){
     loggerLanding.log('Refreshing Server Status')
     const serv = DistroManager.getDistribution().getServer(ConfigManager.getSelectedServer())
 
-    let pLabel = 'SERVER'
     let pVal = 'OFFLINE'
 
     try {
         const serverURL = new URL('my://' + serv.getAddress())
         const servStat = await ServerStatus.getStatus(serverURL.hostname, serverURL.port)
         if(servStat.online){
-            pLabel = 'PLAYERS'
             pVal = servStat.onlinePlayers + '/' + servStat.maxPlayers
         }
 
@@ -315,12 +313,10 @@ const refreshServerStatus = async function(fade = false){
     }
     if(fade){
         $('#server_status_wrapper').fadeOut(250, () => {
-            document.getElementById('landingPlayerLabel').innerHTML = pLabel
             document.getElementById('player_count').innerHTML = pVal
             $('#server_status_wrapper').fadeIn(500)
         })
     } else {
-        document.getElementById('landingPlayerLabel').innerHTML = pLabel
         document.getElementById('player_count').innerHTML = pVal
     }
     
@@ -897,26 +893,28 @@ let newsGlideCount = 0
 /**
  * Show the news UI via a slide animation.
  * 
- * @param {boolean} up True to slide up, otherwise false. 
+ * @param {boolean} right True to slide up, otherwise false.
  */
-function slide_(up){
+function slide_(right){
     const lCUpper = document.querySelector('#landingContainer > #upper')
     const lCLLeft = document.querySelector('#landingContainer > #lower > #left')
     const lCLCenter = document.querySelector('#landingContainer > #lower > #center')
     const lCLRight = document.querySelector('#landingContainer > #lower > #right')
-    const newsBtn = document.querySelector('#landingContainer > #lower > #center #content')
+    const newsBtn = document.querySelector('#left > .news')
     const landingContainer = document.getElementById('landingContainer')
     const newsContainer = document.querySelector('#landingContainer > #newsContainer')
+    const footer = document.querySelector('#landingContainer > #footerBar')
 
     newsGlideCount++
 
-    if(up){
-        lCUpper.style.top = '-200vh'
-        lCLLeft.style.top = '-200vh'
-        lCLCenter.style.top = '-200vh'
-        lCLRight.style.top = '-200vh'
-        newsBtn.style.top = '130vh'
-        newsContainer.style.top = '0px'
+    if(right){
+        lCUpper.style.right = '-200vw'
+        lCLLeft.style.right = '-200vw'
+        lCLCenter.style.right = '-200vw'
+        lCLRight.style.right = '-200vw'
+        footer.style.right = '-200vw'
+        newsBtn.style.left = '93.5vw'
+        newsContainer.style.right = '0%'
         //date.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric'})
         //landingContainer.style.background = 'rgba(29, 29, 29, 0.55)'
         landingContainer.style.background = 'rgba(0, 0, 0, 0.50)'
@@ -934,12 +932,13 @@ function slide_(up){
         landingContainer.style.background = null
         lCLCenter.style.transition = null
         newsBtn.style.transition = null
-        newsContainer.style.top = '100%'
-        lCUpper.style.top = '0px'
-        lCLLeft.style.top = '0px'
-        lCLCenter.style.top = '0px'
-        lCLRight.style.top = '0px'
-        newsBtn.style.top = '10px'
+        newsContainer.style.right = '100%'
+        lCUpper.style.right = '0'
+        lCLLeft.style.right = '0'
+        lCLCenter.style.right = '0'
+        lCLRight.style.right = '0'
+        footer.style.right = '0'
+        newsBtn.style.left = '1vw'
     }
 }
 
@@ -1222,7 +1221,7 @@ function displayArticle(articleObject, index){
 function loadNews(){
     return new Promise((resolve, reject) => {
         const distroData = DistroManager.getDistribution()
-        const newsFeed = distroData.getRSS()
+        const newsFeed = 'https://zapier.com/engine/rss/8359280/discordfeed'
         const newsHost = new URL(newsFeed).origin + '/'
         $.ajax({
             url: newsFeed,

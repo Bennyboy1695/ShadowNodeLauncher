@@ -1,13 +1,13 @@
 {
-  "name": "modrealmslauncher",
+  "name": "shadownodelauncher",
   "version": "2.0.0-release",
-  "productName": "ModRealms Launcher",
+  "productName": "ShadowNode Launcher",
   "description": "Modded Minecraft Launcher",
-  "author": "Rob Weddell and Ally Mitchell (original by Daniel Scalzi)",
+  "author": "Bennyboy1695 & ShadowKitten (original by Daniel Scalzi)",
   "license": "UNLICENSED",
-  "homepage": "https://github.com/ModRealms-Network/HeliosLauncher",
+  "homepage": "https://github.com/Bennyboy1695/ShadowNodeLauncher",
   "bugs": {
-    "url": "https://github.com/ModRealms-Network/HeliosLauncher/issues"
+    "url": "https://github.com/Bennyboy1695/ShadowNodeLauncher/issues"
   },
   "private": true,
   "main": "index.js",
@@ -30,6 +30,7 @@
     "discord-rpc": "^3.1.3",
     "ejs": "^3.1.5",
     "ejs-electron": "^2.1.1",
+    "electron-reload": "^1.5.0",
     "electron-updater": "^4.3.4",
     "fs-extra": "^9.0.1",
     "github-syntax-dark": "^0.5.0",
@@ -44,11 +45,12 @@
   "devDependencies": {
     "cross-env": "^7.0.2",
     "electron": "^9.2.1",
-    "eslint": "^7.7.0",
-    "electron-builder": "22.8.1"
+    "electron-builder": "22.8.1",
+    "electron-reloader": "^1.0.1",
+    "eslint": "^7.7.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ModRealms-Network/ModRealmsLauncher.git"
+    "url": "git+https://github.com/Bennyboy1695/ShadowNodeLauncher.git"
   }
 }

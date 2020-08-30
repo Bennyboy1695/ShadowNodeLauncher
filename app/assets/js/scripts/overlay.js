@@ -281,7 +281,6 @@ function populateServerListings(){
                     <div class="serverListingRevision">${serv.getVersion()}</div>
                 </div>
                 <div class="serverListingDescription">${serv.getDescription()}</div>
-                <div class="serverSelectedText">Selected!</div>
             </div>
         </button>`
     }

@@ -47,7 +47,7 @@ if(!isDev){
                 loggerAutoUpdaterSuccess.log('New update available', info.version)
                 
                 if(process.platform === 'darwin'){
-                    info.darwindownload = `https://github.com/ModRealms-Network/HeliosLauncher/releases/download/v${info.version}/ModRealms-Launcher-setup-${info.version}.dmg`
+                    info.darwindownload = `https://github.com/Bennyboy1695/ShadowLauncher/releases/download/v${info.version}/ShadowNode-Launcher-setup-${info.version}.dmg`
                     showUpdateUI(info)
                 }
                 
