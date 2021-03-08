@@ -9,6 +9,8 @@ const {URL}                   = require('url')
 const {Remarkable}            = require('remarkable')
 const fs                      = require('fs-extra')
 const mongo                   = require('mongodb')
+const request                 = require('request')
+const shell                   = require('electron').shell
 
 // Internal Requirements
 const DiscordWrapper          = require('./assets/js/discordwrapper')
@@ -178,11 +180,20 @@ document.getElementById('settingsMediaButton').onclick = (e) => {
         DiscordWrapper.clearState()
     }
 }
-/*document.getElementById('refreshMediaButton').onclick = (e) => {
-    DistroManager.pullRemote().then((data) => {
-        onDistroRefresh(data)
-        showMainUI(data)
-    })
+
+/*document.getElementById('discordURL').onclick = async (e) => {
+    console.log('Im here ?!')
+    const url = 'https://shadownode.ca/discord/api/invite.json';
+    let link = 'https://shadownode.ca/discord'
+    request.get({url: url, json: true}, (err, res, data) => {
+        if (err) {
+            // handle error
+        } else if (res.statusCode === 200) {
+            // you can use data here - already parsed as json
+            link = data.instant_invite;
+        }
+    });
+    shell.openExternal(link)
 }*/
 
 // Bind avatar overlay button.
@@ -313,11 +324,11 @@ const refreshServerStatus = async function(fade = false){
     }
     if(fade){
         $('#server_status_wrapper').fadeOut(250, () => {
-            document.getElementById('player_count').innerHTML = pVal
+            /*document.getElementById('player_count').innerHTML = pVal*/
             $('#server_status_wrapper').fadeIn(500)
         })
     } else {
-        document.getElementById('player_count').innerHTML = pVal
+        /*document.getElementById('player_count').innerHTML = pVal*/
     }
     
 }
@@ -338,7 +349,7 @@ refreshMojangStatuses()
 
 // Set refresh rate to once every 5 minutes.
 let mojangStatusListener = setInterval(() => refreshMojangStatuses(true), 300000)
-let serverStatusListener = setInterval(() => refreshServerStatus(true), 300000)
+/*let serverStatusListener = setInterval(() => refreshServerStatus(true), 300000)*/
 
 /**
  * Shows an error overlay, toggles off the launch area.
