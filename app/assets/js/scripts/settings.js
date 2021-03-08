@@ -1559,7 +1559,7 @@ function prepareUpdateTab(data = null) {
 /**
   * Prepare the entire settings UI.
   * 
-  *
+  * 
   * @param {boolean} first Whether or not it is the first load.
   */
 function prepareSettings(first = false) {

@@ -44,11 +44,18 @@ branches:
     - "/^v\\d+\\.\\d+\\.\\d+$/"
 
 before_deploy:
+<<<<<<< HEAD
   # Set up git user name and tag this commit
   - git config --local user.name "Bennyboy1695"
   - git config --local user.email "benny.boy1695@gmail.com"
+=======
+>>>>>>> upstream/master
   - export TRAVIS_TAG=${TRAVIS_TAG:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)}
-  - git tag $TRAVIS_TAG
+  - if ! [[ $TRAVIS_TAG ]]; then
+  -   git config --local user.name "TheFlash787"
+  -   git config --local user.email "sonically@hotmail.co.uk"
+  -   git tag $TRAVIS_TAG
+  - fi
 
 deploy:
   provider: releases
@@ -56,10 +63,17 @@ deploy:
   edge: true
   api_key: $GH_TOKEN
   file:
+<<<<<<< HEAD
     - dist/ShadowNodeLauncher-setup-2.0.0-pre.5.exe
     - dist/ShadowNodeLauncher-setup-2.0.0-pre.5.AppImage
     - dist/ShadowNodeLauncher-setup-2.0.0-pre.5.dmg
     - dist/ShadowNodeLauncher-setup-2.0.0-pre.5.exe.blockmap
+=======
+    - dist/ModRealmsLauncher-setup-2.5.0-prerelease.2.exe
+    - dist/ModRealmsLauncher-setup-2.5.0-prerelease.2.AppImage
+    - dist/ModRealmsLauncher-setup-2.5.0-prerelease.2.dmg
+    - dist/ModRealmsLauncher-setup-2.5.0-prerelease.2.blockmap
+>>>>>>> upstream/master
     - dist/latest-mac.yml
     - dist/latest-linux.yml
     - dist/latest.yml
