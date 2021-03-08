@@ -23,6 +23,25 @@ exports.getLauncherDirectory = function(){
 }
 
 /**
+ * Retrieve the ETag version for the current stored distribution file
+ *
+ * @returns {string} The absolute path of the launcher directory.
+ */
+exports.getDistributionVersion = function(){
+    return config.distributionVersion
+}
+
+/**
+ * Stores the current distribution ETag version into the configuration, to compare with remote headers.
+ *
+ * @returns {string} The absolute path of the launcher directory.
+ */
+exports.setDistributionVersion = function(version){
+    config.distributionVersion = version
+}
+
+
+/**
  * Get the launcher's data directory. This is where all files related
  * to game launch are installed (common, instances, java, etc).
  *
@@ -69,13 +88,12 @@ exports.getAbsoluteMinRAM = function(){
 
 exports.getAbsoluteMaxRAM = function(){
     const mem = os.totalmem()
-    const gT16 = mem-16000000000
-    return Math.floor((mem-1000000000-(gT16 > 0 ? (gT16/8 + 16000000000/4) : mem/4))/950000000)
+    return Math.floor((mem/1000000000))
 }
 
 function resolveMaxRAM(){
     const mem = os.totalmem()
-    return mem >= 1600000000 ? '8G' : (mem >= 8000000000 ? '6G' : (mem >= 6000000000 ? '4G' : '2G'))
+    return mem >= 16000000000 ? '8G' : (mem >= 8000000000 ? '6G' : (mem >= 6000000000 ? '4G' : '2G'))
 }
 
 function resolveMinRAM(){
@@ -139,10 +157,12 @@ const DEFAULT_CONFIG = {
         dismissed: false
     },
     clientToken: null,
+    distributionVersion: null,
     selectedServer: null, // Resolved
     selectedAccount: null,
     authenticationDatabase: {},
-    modConfigurations: []
+    modConfigurations: [],
+    microsoftAuth: {}
 }
 
 let config = null
@@ -360,13 +380,35 @@ exports.getAuthAccount = function(uuid){
  * 
  * @returns {Object} The authenticated account object created by this action.
  */
-exports.updateAuthAccount = function(uuid, accessToken){
+exports.updateAuthAccount = function(uuid, accessToken, expiresAt = undefined){
     config.authenticationDatabase[uuid].accessToken = accessToken
+    config.authenticationDatabase[uuid].expiresAt = expiresAt
     return config.authenticationDatabase[uuid]
 }
 
 /**
- * Adds an authenticated account to the database to be stored.
+ * Update the tokens of an authenticated microsoft account.
+ * 
+ * @param {string} uuid The uuid of the authenticated account.
+ * @param {string} accessToken The new Access Token.
+ * @param {string} msAccessToken The new Microsoft Access Token
+ * @param {string} msRefreshToken The new Microsoft Refresh Token
+ * @param {date} msExpires The date when the microsoft access token expires
+ * @param {date} mcExpires The date when the mojang access token expires
+ * 
+ * @returns {Object} The authenticated account object created by this action.
+ */
+exports.updateAuthAccount = function(uuid, accessToken, msAccessToken, msRefreshToken, msExpires, mcExpires){
+    config.authenticationDatabase[uuid].accessToken = accessToken
+    config.authenticationDatabase[uuid].expiresAt = mcExpires
+    config.authenticationDatabase[uuid].microsoft.access_token = msAccessToken
+    config.authenticationDatabase[uuid].microsoft.refresh_token = msRefreshToken
+    config.authenticationDatabase[uuid].microsoft.expires_at = msRefreshToken
+    return config.authenticationDatabase[uuid]
+}
+
+/**
+ * Adds an authenticated mojang account to the database to be stored.
  * 
  * @param {string} uuid The uuid of the authenticated account.
  * @param {string} accessToken The accessToken of the authenticated account.
@@ -381,7 +423,39 @@ exports.addAuthAccount = function(uuid, accessToken, username, displayName){
         accessToken,
         username: username.trim(),
         uuid: uuid.trim(),
-        displayName: displayName.trim()
+        displayName: displayName.trim(),
+        type: 'mojang'
+    }
+    return config.authenticationDatabase[uuid]
+}
+
+/**
+ * Adds an authenticated microsoft account to the database to be stored.
+ * 
+ * @param {string} uuid The uuid of the authenticated account.
+ * @param {string} accessToken The accessToken of the authenticated account.
+ * @param {string} name The in game name of the authenticated account.
+ * @param {date} mcExpires The date when the mojang access token expires
+ * @param {string} msAccessToken The microsoft access token
+ * @param {string} msRefreshToken The microsoft refresh token
+ * @param {date} msExpires The date when the microsoft access token expires
+ * 
+ * @returns {Object} The authenticated account object created by this action.
+ */
+exports.addMsAuthAccount = function(uuid, accessToken, name, mcExpires, msAccessToken, msRefreshToken, msExpires){
+    config.selectedAccount = uuid
+    config.authenticationDatabase[uuid] = {
+        accessToken,
+        username: name.trim(),
+        uuid: uuid.trim(),
+        displayName: name.trim(),
+        expiresAt: mcExpires,
+        type: 'microsoft',
+        microsoft: {
+            access_token: msAccessToken,
+            refresh_token: msRefreshToken,
+            expires_at: msExpires
+        }
     }
     return config.authenticationDatabase[uuid]
 }
@@ -759,3 +833,18 @@ exports.getDiscordIntegration = function(def = false){
 exports.setDiscordIntegration = function(discordIntegration){
     config.settings.launcher.discordIntegration = discordIntegration
 }
+
+exports.setMicrosoftAuth = microsoftAuth => {
+    config.microsoftAuth = microsoftAuth
+}
+
+exports.getMicrosoftAuth = () => {
+    return config.microsoftAuth
+}
+
+exports.updateMicrosoftAuth = (accessToken, expiresAt) => {
+    config.microsoftAuth.access_token = accessToken
+    config.microsoftAuth.expires_at = expiresAt
+
+    return config.microsoftAuth
+}  

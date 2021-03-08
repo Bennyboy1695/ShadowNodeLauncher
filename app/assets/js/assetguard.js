@@ -11,9 +11,12 @@ const request       = require('request')
 const tar           = require('tar-fs')
 const zlib          = require('zlib')
 
+const LoggerUtil = require('./loggerutil')
 const ConfigManager = require('./configmanager')
 const DistroManager = require('./distromanager')
 const isDev         = require('./isdev')
+
+const loggerAG = LoggerUtil('%c[AssetGuard]', 'color: #000668; font-weight: bold')
 
 // Constants
 // const PLATFORM_MAP = {
@@ -272,13 +275,26 @@ class JavaGuard extends EventEmitter {
      */
 
     /**
-     * Fetch the last open JDK binary. Uses https://api.adoptopenjdk.net/
+     * Fetch the last open JDK binary.
+     * 
+     * HOTFIX: Uses Corretto 8 for macOS.
+     * See: https://github.com/dscalzi/HeliosLauncher/issues/70
+     * See: https://github.com/AdoptOpenJDK/openjdk-support/issues/101
      * 
      * @param {string} major The major version of Java to fetch.
      * 
      * @returns {Promise.<OpenJDKData>} Promise which resolved to an object containing the JRE download data.
      */
     static _latestOpenJDK(major = '8'){
+
+        if(process.platform === 'darwin') {
+            return this._latestCorretto(major)
+        } else {
+            return this._latestAdoptOpenJDK(major)
+        }
+    }
+
+    static _latestAdoptOpenJDK(major) {
 
         const sanitizedOS = process.platform === 'win32' ? 'windows' : (process.platform === 'darwin' ? 'mac' : process.platform)
 
@@ -297,6 +313,48 @@ class JavaGuard extends EventEmitter {
                 }
             })
         })
+
+    }
+
+    static _latestCorretto(major) {
+
+        let sanitizedOS, ext
+
+        switch(process.platform) {
+            case 'win32':
+                sanitizedOS = 'windows'
+                ext = 'zip'
+                break
+            case 'darwin':
+                sanitizedOS = 'macos'
+                ext = 'tar.gz'
+                break
+            case 'linux':
+                sanitizedOS = 'linux'
+                ext = 'tar.gz'
+                break
+            default:
+                sanitizedOS = process.platform
+                ext = 'tar.gz'
+                break
+        }
+
+        const url = `https://corretto.aws/downloads/latest/amazon-corretto-${major}-x64-${sanitizedOS}-jdk.${ext}`
+
+        return new Promise((resolve, reject) => {
+            request.head({url, json: true}, (err, resp) => {
+                if(!err && resp.statusCode === 200){
+                    resolve({
+                        uri: url,
+                        size: parseInt(resp.headers['content-length']),
+                        name: url.substr(url.lastIndexOf('/')+1)
+                    })
+                } else {
+                    resolve(null)
+                }
+            })
+        })
+
     }
 
     /**
@@ -429,7 +487,7 @@ class JavaGuard extends EventEmitter {
             if(props[i].indexOf('sun.arch.data.model') > -1){
                 let arch = props[i].split('=')[1].trim()
                 arch = parseInt(arch)
-                console.log(props[i].trim())
+                loggerAG.log(props[i].trim())
                 if(arch === 64){
                     meta.arch = arch
                     ++checksum
@@ -439,7 +497,7 @@ class JavaGuard extends EventEmitter {
                 }
             } else if(props[i].indexOf('java.runtime.version') > -1){
                 let verString = props[i].split('=')[1].trim()
-                console.log(props[i].trim())
+                loggerAG.log(props[i].trim())
                 const verOb = JavaGuard.parseJavaRuntimeVersion(verString)
                 if(verOb.major < 9){
                     // Java 8
@@ -453,7 +511,7 @@ class JavaGuard extends EventEmitter {
                 } else {
                     // Java 9+
                     if(Util.mcVersionAtLeast('1.13', this.mcVersion)){
-                        console.log('Java 9+ not yet tested.')
+                        loggerAG.log('Java 9+ not yet tested.')
                         /* meta.version = verOb
                         ++checksum
                         if(checksum === goal){
@@ -461,6 +519,11 @@ class JavaGuard extends EventEmitter {
                         } */
                     }
                 }
+                // Space included so we get only the vendor.
+            } else if(props[i].lastIndexOf('java.vendor ') > -1) {
+                let vendorName = props[i].split('=')[1].trim()
+                loggerAG.log(props[i].trim())
+                meta.vendor = vendorName
             }
         }
 
@@ -489,7 +552,7 @@ class JavaGuard extends EventEmitter {
                 resolve({valid: false})
             } else if(fs.existsSync(binaryExecPath)){
                 // Workaround (javaw.exe no longer outputs this information.)
-                console.log(typeof binaryExecPath)
+                loggerAG.log(typeof binaryExecPath)
                 if(binaryExecPath.indexOf('javaw.exe') > -1) {
                     binaryExecPath.replace('javaw.exe', 'java.exe')
                 }
@@ -562,7 +625,7 @@ class JavaGuard extends EventEmitter {
                         key.keys((err, javaVers) => {
                             if(err){
                                 keysDone++
-                                console.error(err)
+                                loggerAG.error(err)
 
                                 // REG KEY DONE
                                 // DUE TO ERROR
@@ -655,51 +718,26 @@ class JavaGuard extends EventEmitter {
      * @returns {Promise.<Set.<string>>} A promise which resolves to a set of the discovered
      * root JVM folders.
      */
-    static _scanFileSystem(scanDir){
-        return new Promise((resolve, reject) => {
+    static async _scanFileSystem(scanDir){
 
-            fs.exists(scanDir, (e) => {
+        let res = new Set()
 
-                let res = new Set()
-                
-                if(e){
-                    fs.readdir(scanDir, (err, files) => {
-                        if(err){
-                            resolve(res)
-                            console.log(err)
-                        } else {
-                            let pathsDone = 0
+        if(await fs.pathExists(scanDir)) {
 
-                            for(let i=0; i<files.length; i++){
+            const files = await fs.readdir(scanDir)
+            for(let i=0; i<files.length; i++){
 
-                                const combinedPath = path.join(scanDir, files[i])
-                                const execPath = JavaGuard.javaExecFromRoot(combinedPath)
+                const combinedPath = path.join(scanDir, files[i])
+                const execPath = JavaGuard.javaExecFromRoot(combinedPath)
 
-                                fs.exists(execPath, (v) => {
-
-                                    if(v){
-                                        res.add(combinedPath)
-                                    }
-
-                                    ++pathsDone
-
-                                    if(pathsDone === files.length){
-                                        resolve(res)
-                                    }
-
-                                })
-                            }
-                            if(pathsDone === files.length){
-                                resolve(res)
-                            }
-                        }
-                    })
-                } else {
-                    resolve(res)
+                if(await fs.pathExists(execPath)) {
+                    res.add(combinedPath)
                 }
-            })
+            }
+        }
 
-        })
+        return res
+
     }
 
     /**
@@ -805,9 +843,13 @@ class JavaGuard extends EventEmitter {
 
         // Get possible paths from the registry.
         let pathSet1 = await JavaGuard._scanRegistry()
-        if(pathSet1.length === 0){
+        if(pathSet1.size === 0){
             // Do a manual file system scan of program files.
-            pathSet1 = JavaGuard._scanFileSystem('C:\\Program Files\\Java')
+            pathSet1 = new Set([
+                ...pathSet1,
+                ...(await JavaGuard._scanFileSystem('C:\\Program Files\\Java')),
+                ...(await JavaGuard._scanFileSystem('C:\\Program Files\\AdoptOpenJDK'))
+            ])
         }
 
         // Get possible paths from the data directory.
@@ -1011,7 +1053,7 @@ class AssetGuard extends EventEmitter {
         if(fs.existsSync(filePath)){
             //No hash provided, have to assume it's good.
             if(hash == null){
-                console.log('There\'s no hash clientside, we assume it doesn\'t exist and all is good!')
+                loggerAG.log('There\'s no hash clientside, we assume it doesn\'t exist and all is good!')
                 return true
             }
             let buf = fs.readFileSync(filePath)
@@ -1098,7 +1140,7 @@ class AssetGuard extends EventEmitter {
      * @returns {Promise.<void>} An empty promise to indicate the extraction has completed.
      */
     static _extractPackXZ(filePaths, javaExecutable){
-        console.log('[PackXZExtract] Starting')
+        loggerAG.log('[PackXZExtract] Starting')
         return new Promise((resolve, reject) => {
 
             let libPath
@@ -1115,13 +1157,13 @@ class AssetGuard extends EventEmitter {
             const filePath = filePaths.join(',')
             const child = child_process.spawn(javaExecutable, ['-jar', libPath, '-packxz', filePath])
             child.stdout.on('data', (data) => {
-                console.log('[PackXZExtract]', data.toString('utf8'))
+                loggerAG.log('[PackXZExtract]', data.toString('utf8'))
             })
             child.stderr.on('data', (data) => {
-                console.log('[PackXZExtract]', data.toString('utf8'))
+                loggerAG.log('[PackXZExtract]', data.toString('utf8'))
             })
             child.on('close', (code, signal) => {
-                console.log('[PackXZExtract]', 'Exited with code', code)
+                loggerAG.log('[PackXZExtract]', 'Exited with code', code)
                 resolve()
             })
         })
@@ -1187,7 +1229,7 @@ class AssetGuard extends EventEmitter {
             if(!fs.existsSync(versionFile) || force){
                 const url = await self._getVersionDataUrl(version)
                 //This download will never be tracked as it's essential and trivial.
-                console.log('Preparing download of ' + version + ' assets.')
+                loggerAG.log('Preparing download of ' + version + ' assets.')
                 fs.ensureDirSync(versionPath)
                 const stream = request(url).pipe(fs.createWriteStream(versionFile))
                 stream.on('finish', () => {
@@ -1269,7 +1311,7 @@ class AssetGuard extends EventEmitter {
 
             let data = null
             if(!fs.existsSync(assetIndexLoc) || force){
-                console.log('Downloading ' + versionData.id + ' asset index.')
+                loggerAG.log('Downloading ' + versionData.id + ' asset index.')
                 fs.ensureDirSync(indexPath)
                 const stream = request(assetIndex.url).pipe(fs.createWriteStream(assetIndexLoc))
                 stream.on('finish', () => {
@@ -1299,7 +1341,7 @@ class AssetGuard extends EventEmitter {
         return new Promise((resolve, reject) => {
 
             //Asset constants
-            const resourceURL = 'http://resources.download.minecraft.net/'
+            const resourceURL = 'https://resources.download.minecraft.net/'
             const localPath = path.join(self.commonPath, 'assets')
             const objectPath = path.join(localPath, 'objects')
 
@@ -1315,9 +1357,10 @@ class AssetGuard extends EventEmitter {
                 const assetName = path.join(hash.substring(0, 2), hash)
                 const urlName = hash.substring(0, 2) + '/' + hash
                 const ast = new Asset(key, hash, value.size, resourceURL + urlName, path.join(objectPath, assetName))
-                if(!AssetGuard._validateLocal(ast.to, 'sha1', ast.hash)){
+                if(!fs.existsSync(ast.to)){
                     dlSize += (ast.size*1)
                     assetDlQueue.push(ast)
+                    loggerAG.log(assetName + ' does not exist, and therefore will be downloaded!')
                 }
                 cb()
             }, (err) => {
@@ -1555,12 +1598,12 @@ class AssetGuard extends EventEmitter {
                             const pos = path.join(dataDir, zip.getEntries()[0].entryName)
                             zip.extractAllToAsync(dataDir, true, (err) => {
                                 if(err){
-                                    console.log(err)
+                                    loggerAG.log(err)
                                     self.emit('complete', 'java', JavaGuard.javaExecFromRoot(pos))
                                 } else {
                                     fs.unlink(a.to, err => {
                                         if(err){
-                                            console.log(err)
+                                            loggerAG.log(err)
                                         }
                                         self.emit('complete', 'java', JavaGuard.javaExecFromRoot(pos))
                                     })
@@ -1571,9 +1614,9 @@ class AssetGuard extends EventEmitter {
                             // Tar.gz
                             let h = null
                             fs.createReadStream(a.to)
-                                .on('error', err => console.log(err))
+                                .on('error', err => loggerAG.log(err))
                                 .pipe(zlib.createGunzip())
-                                .on('error', err => console.log(err))
+                                .on('error', err => loggerAG.log(err))
                                 .pipe(tar.extract(dataDir, {
                                     map: (header) => {
                                         if(h == null){
@@ -1581,11 +1624,11 @@ class AssetGuard extends EventEmitter {
                                         }
                                     }
                                 }))
-                                .on('error', err => console.log(err))
+                                .on('error', err => loggerAG.log(err))
                                 .on('finish', () => {
                                     fs.unlink(a.to, err => {
                                         if(err){
-                                            console.log(err)
+                                            loggerAG.log(err)
                                         }
                                         if(h.indexOf('/') > -1){
                                             h = h.substring(0, h.indexOf('/'))
@@ -1631,9 +1674,9 @@ class AssetGuard extends EventEmitter {
     //                         this.java = new DLTracker([jre], jre.size, (a, self) => {
     //                             let h = null
     //                             fs.createReadStream(a.to)
-    //                                 .on('error', err => console.log(err))
+    //                                 .on('error', err => loggerAG.log(err))
     //                                 .pipe(zlib.createGunzip())
-    //                                 .on('error', err => console.log(err))
+    //                                 .on('error', err => loggerAG.log(err))
     //                                 .pipe(tar.extract(dataDir, {
     //                                     map: (header) => {
     //                                         if(h == null){
@@ -1641,11 +1684,11 @@ class AssetGuard extends EventEmitter {
     //                                         }
     //                                     }
     //                                 }))
-    //                                 .on('error', err => console.log(err))
+    //                                 .on('error', err => loggerAG.log(err))
     //                                 .on('finish', () => {
     //                                     fs.unlink(a.to, err => {
     //                                         if(err){
-    //                                             console.log(err)
+    //                                             loggerAG.log(err)
     //                                         }
     //                                         if(h.indexOf('/') > -1){
     //                                             h = h.substring(0, h.indexOf('/'))
@@ -1727,7 +1770,7 @@ class AssetGuard extends EventEmitter {
         const dlQueue = dlTracker.dlqueue
 
         if(dlQueue.length > 0){
-            console.log('DLQueue', dlQueue)
+            loggerAG.log('DLQueue', dlQueue)
 
             async.eachLimit(dlQueue, limit, (asset, cb) => {
 
@@ -1744,7 +1787,7 @@ class AssetGuard extends EventEmitter {
                         /*const contentLength = parseInt(resp.headers['content-length'])
 
                         if(contentLength !== asset.size){
-                            console.log(`WARN: Got ${contentLength} bytes for ${asset.id}: Expected ${asset.size}`)
+                            loggerAG.log(`WARN: Got ${contentLength} bytes for ${asset.id}: Expected ${asset.size}`)
                             doHashCheck = true
 
                             // Adjust download
@@ -1761,9 +1804,9 @@ class AssetGuard extends EventEmitter {
                             if(doHashCheck){
                                 const v = AssetGuard._validateLocal(asset.to, asset.type != null ? 'md5' : 'sha1', asset.hash)
                                 if(v){
-                                    console.log(`Hashes match for ${asset.id}, byte mismatch is an issue in the distro index.`)
+                                    loggerAG.log(`Hashes match for ${asset.id}, byte mismatch is an issue in the distro index.`)
                                 } else {
-                                    console.error(`Hashes do not match, ${asset.id} may be corrupted.`)
+                                    loggerAG.error(`Hashes do not match, ${asset.id} may be corrupted.`)
                                 }
                             }
 
@@ -1775,7 +1818,7 @@ class AssetGuard extends EventEmitter {
                     } else {
 
                         req.abort()
-                        console.log(`Failed to download ${asset.id}(${typeof asset.from === 'object' ? asset.from.url : asset.from}). Response code ${resp.statusCode}`)
+                        loggerAG.log(`Failed to download ${asset.id}(${typeof asset.from === 'object' ? asset.from.url : asset.from}). Response code ${resp.statusCode}`)
                         self.progress += asset.size*1
                         self.emit('progress', 'download', self.progress, self.totaldlsize)
                         cb()
@@ -1796,9 +1839,9 @@ class AssetGuard extends EventEmitter {
             }, (err) => {
 
                 if(err){
-                    console.log('An item in ' + identifier + ' failed to process')
+                    loggerAG.log('An item in ' + identifier + ' failed to process')
                 } else {
-                    console.log('All ' + identifier + ' have been processed successfully')
+                    loggerAG.log('All ' + identifier + ' have been processed successfully')
                 }
 
                 //self.totaldlsize -= dlTracker.dlsize

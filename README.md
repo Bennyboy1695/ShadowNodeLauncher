@@ -10,7 +10,7 @@
 
 ## Downloads
 
-You can download from [GitHub Releases](https://github.com/dscalzi/HeliosLauncher/releases)
+You can download from [GitHub Releases](https://github.com/ModRealms-Network/ModRealmsLauncher/releases)
 
 ## Development (ModRealms fork)
 
@@ -29,9 +29,9 @@ If you download from the [Releases](https://github.com/ModRealms-Network/HeliosL
 
 | Platform | File |
 | -------- | ---- |
-| Windows x64 | `helioslauncher-setup-VERSION.exe` |
-| macOS | `helioslauncher-VERSION.dmg` |
-| Linux x64 | `helioslauncher-VERSION-x86_64.AppImage` |
+| Windows x64 | `Helios-Launcher-setup-VERSION.exe` |
+| macOS | `Helios-Launcher-setup-VERSION.dmg` |
+| Linux x64 | `Helios-Launcher-setup-VERSION.AppImage` |
 
 ## Console
 
@@ -68,8 +68,8 @@ This project is forked from HeliosLauncher, a project by dscalzi for the server 
 [discord2]: https://discord.gg/zNWUXdt 'Original Project Discord'
 [original]: https://github.com/dscalzi/HeliosLauncher 'Original Project GitHub'
 ```console
-> git clone https://github.com/dscalzi/HeliosLauncher.git
-> cd HeliosLauncher
+> git clone https://github.com/ModRealms-Network/ModRealmsLauncher.git
+> cd ModRealmsLauncher
 > npm install
 ```
 
@@ -118,13 +118,9 @@ Paste the following into `.vscode/launch.json`
       "type": "node",
       "request": "launch",
       "cwd": "${workspaceFolder}",
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
-      "windows": {
-        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
-      },
-      "args": ["."],
-      "console": "integratedTerminal",
-      "protocol": "inspector"
+      "program": "${workspaceFolder}/node_modules/electron/cli.js",
+      "args" : ["."],
+      "outputCapture": "std"
     },
     {
       "name": "Debug Renderer Process",
@@ -168,18 +164,6 @@ You may use this software in your own project so long as the following condition
 * The source code remain **public** as a fork of this repository.
 
 We reserve the right to update these conditions at any time, please check back periodically.
-
----
-
-## Resources
-
-* [Wiki][wiki]
-* [Nebula (Create Distribution.json)][nebula]
-* [v2 Rewrite Branch (WIP)][v2branch]
-
-The best way to contact the developers is on Discord.
-
-[![discord](https://discordapp.com/api/guilds/211524927831015424/embed.png?style=banner3)][discord]
 
 ---
 
