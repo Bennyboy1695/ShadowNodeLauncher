@@ -530,6 +530,42 @@ exports.setModConfigurations = function(configurations){
 }
 
 /**
+ * Set the MinRam for the stored mod configurations.
+ *
+ * @param {String} minRAM An array of mod configurations.
+ */
+exports.setModMinRam = function(minRAM){
+    config.modConfigurations.minRAM = minRAM
+}
+
+/**
+ * Set the MaxRam for the stored mod configurations.
+ *
+ * @param {String} maxRAM An array of mod configurations.
+ */
+exports.setModMaxRam = function(maxRAM){
+    config.modConfigurations.maxRAM = maxRAM
+}
+
+/**
+ * Get the packs MinRam for each mod configuration currently stored.
+ *
+ * @returns {String} minRam An array of each stored mod configuration.
+ */
+exports.getModMinRam = function(){
+    return config.modConfigurations.minRam
+}
+
+/**
+ * Get the packs MinRam for each mod configuration currently stored.
+ *
+ * @returns {String} minRam An array of each stored mod configuration.
+ */
+exports.getModMaxRam = function(){
+    return config.modConfigurations.maxRam
+}
+
+/**
  * Get the mod configuration for a specific server.
  * 
  * @param {string} serverid The id of the server.

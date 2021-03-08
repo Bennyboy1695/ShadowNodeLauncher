@@ -28,7 +28,7 @@
     "adm-zip": "^0.5.2",
     "async": "^3.2.0",
     "chokidar": "^3.4.3",
-    "discord-rpc": "^3.1.4",
+    "discord-rpc": "^3.2.0",
     "ejs": "^3.1.5",
     "ejs-electron": "^2.1.1",
     "electron-updater": "^4.3.5",

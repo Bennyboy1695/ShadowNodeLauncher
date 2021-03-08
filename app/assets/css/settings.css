@@ -972,7 +972,7 @@ input:checked + .toggleSwitchSlider:before {
 }
 
 /* Button to add shaderpacks. */
-#settingsShaderpackButton {
+#settingsShaderpackButton, #settingsResourcePackButton {
     background: rgba(0, 0, 0, 0.25);
     border: 1px solid rgba(126, 126, 126, 0.57);
     border-radius: 3px;
@@ -985,7 +985,10 @@ input:checked + .toggleSwitchSlider:before {
 }
 #settingsShaderpackButton:hover,
 #settingsShaderpackButton:focus,
-#settingsShaderpackButton[drag] {
+#settingsShaderpackButton[drag],
+#settingsResourcePackButton:hover,
+#settingsResourcePackButton:focus,
+#settingsResourcePackButton[drag] {
     background: rgba(54, 54, 54, 0.25);
     text-shadow: 0px 0px 20px white;
 }
