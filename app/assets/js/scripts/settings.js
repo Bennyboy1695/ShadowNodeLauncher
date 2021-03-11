@@ -185,6 +185,19 @@ function initSettingsValues() {
     })
 }
 
+const showReqModsButton = document.getElementById('showRequiredMods');
+
+showReqModsButton.addEventListener('click', () => {
+    const settingsContainer = document.getElementById('settingsReqModsContent')
+    const reqModsSVG = document.getElementById('requiredModsSVG')
+    settingsContainer.classList.toggle('hideMods')
+    if (settingsContainer.classList.contains('hideMods')) {
+        reqModsSVG.style.transform = 'rotate(90deg)'
+    } else {
+        reqModsSVG.style.transform = 'rotate(180deg)'
+    }
+})
+
 /**
  * Save the settings values.
  */

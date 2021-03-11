@@ -117,8 +117,19 @@
             </div>
             <div id="settingsModsContainer">
                 <div id="settingsReqModsContainer">
-                    <div class="settingsModsHeader">Required Mods</div>
-                    <div id="settingsReqModsContent">
+                    <div class="settingsModsHeader">Required Mods <button id="showRequiredMods"><span>
+                            <svg id="requiredModsSVG" viewBox="0 0 24.87 13.97">
+                                <defs>
+                                    <style>.arrowLine {
+                                            fill: none;
+                                            stroke: #fff;
+                                            stroke-width: 2px;
+                                            transition: 0.25s ease;
+                                        }</style>
+                                </defs>
+                                <polyline class="arrowLine" points="0.71 13.26 12.56 1.41 24.16 13.02"/>
+                            </svg></span></button></div>
+                    <div id="settingsReqModsContent" class="hideMods">
 
                     </div>
                 </div>
